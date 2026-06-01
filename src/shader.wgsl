@@ -568,7 +568,7 @@ struct TextVertexOutput {
 fn vs_text(in: TextVertexInput) -> TextVertexOutput {
     var out: TextVertexOutput;
     let anchor_proj = vec2<f32>(
-        in.anchor.x * uniforms.scale + uniforms.translate.x,
+        in.anchor.x * uniforms.rel_scale + uniforms.translate.x,
         in.anchor.y * uniforms.y_stretch * uniforms.scale + uniforms.translate.y
     );
     let final_pos = anchor_proj + vec2<f32>(in.pos.x, -in.pos.y) * (in.size * uniforms.rel_scale);

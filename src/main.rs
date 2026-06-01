@@ -1247,7 +1247,7 @@ impl<'a> State<'a> {
     fn rebuild_ui(&mut self) {
         let size = self.size;
         let scroll = self.sidebar_scroll_y;
-        let margin_side = 5.0;
+        let margin_side = 15.0;
         let mut sidebar_text_vertices = Vec::new();
         let mut spark_vertices = Vec::new();
         let mut border_vertices = Vec::new();
@@ -1259,7 +1259,7 @@ impl<'a> State<'a> {
                 let y_top = size.height as f32 - 40.0 - (idx as f32 * 260.0) + scroll;
                 let card_h = 230.0;
                 let x_left = margin_side;
-                let x_right = 345.0;
+                let x_right = 335.0;
                 
                 // --- CADRES BLANCS (Juste les cadres) ---
                 let b = 1.0; 
@@ -1317,7 +1317,7 @@ impl<'a> State<'a> {
                 let card_h = 230.0;
                 let x_left = margin_side;
                 let x_start = x_left + 15.0;
-                let width = 310.0;
+                let width = 290.0;
                 
                 let graph_width = self.size.width as f32 - 500.0;
                 let graph_height = self.size.height as f32 * 0.5;
@@ -1361,7 +1361,7 @@ impl<'a> State<'a> {
                 let card_h = 230.0;
                 let x_left = margin_side;
                 let x_start = x_left + 15.0;
-                let width = 310.0;
+                let width = 290.0;
                 
                 let graph_width = self.size.width as f32 - 500.0;
                 let graph_height = self.size.height as f32 * 0.5;
@@ -1561,8 +1561,8 @@ impl<'a> State<'a> {
             if let Some(ref font) = self.fa {
                 let text = format!("{}m", h);
                 let (pos_ax, uvs_ax): (Vec<f32>, Vec<f32>) = font.get_text_geometry(&text);
-                // Décalage fixe en coordonnées monde, cappé pour ne pas dériver au zoom
-                let offset_x = -max_dist * 0.045;
+                // Décalage fixe en pixels écran, découplé du zoom
+                let offset_x = -45.0;
                 let anchor = [offset_x, y];
                 let size = 0.3;
                 for i in 0..(pos_ax.len() / 2) {
@@ -2850,14 +2850,17 @@ impl<'a> State<'a> {
             });
             pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             let scissor_left = if self.current_morph < 0.5 {
-                let rpw = (self.size.width as f32) - 350.0;
-                (350.0 + rpw * 0.1) as u32
+                (self.pos_translate[0] as f32).max(352.0) as u32
             } else {
                 352
             };
             let scissor_width = if self.current_morph < 0.5 {
-                let rpw = (self.size.width as f32) - 350.0;
-                (rpw * 0.8) as u32
+                let right = (self.pos_translate[0] as f32 + self.max_dist * self.pos_scale as f32).min(self.size.width as f32);
+                if right > scissor_left as f32 {
+                    (right - scissor_left as f32) as u32
+                } else {
+                    1
+                }
             } else {
                 self.size.width - 352
             };
@@ -2908,6 +2911,10 @@ impl<'a> State<'a> {
 
             // Draw optional Axes (only in 2D Profile)
             if self.current_morph < 0.5 {
+                let axes_scissor_left = 352;
+                let axes_scissor_width = (self.size.width - 352).max(1);
+                pass.set_scissor_rect(axes_scissor_left, 0, axes_scissor_width, self.size.height);
+
                 pass.set_pipeline(&self.axes_render_pipeline);
                 pass.set_vertex_buffer(0, self.axes_vertex_buffer.slice(..));
                 pass.set_index_buffer(self.axes_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
@@ -3001,14 +3008,17 @@ impl<'a> State<'a> {
 
             // 7. Reticule + graph text (scissored to graph area)
             let scissor_left = if self.current_morph < 0.5 {
-                let rpw = (self.size.width as f32) - 350.0;
-                (350.0 + rpw * 0.1) as u32
+                (self.pos_translate[0] as f32).max(352.0) as u32
             } else {
                 352
             };
             let scissor_width = if self.current_morph < 0.5 {
-                let rpw = (self.size.width as f32) - 350.0;
-                (rpw * 0.8) as u32
+                let right = (self.pos_translate[0] as f32 + self.max_dist * self.pos_scale as f32).min(self.size.width as f32);
+                if right > scissor_left as f32 {
+                    (right - scissor_left as f32) as u32
+                } else {
+                    1
+                }
             } else {
                 self.size.width - 352
             };
@@ -3019,6 +3029,10 @@ impl<'a> State<'a> {
             }
 
             if let Some(ref bg) = self.atlas_bind_group {
+                let text_scissor_left = 352;
+                let text_scissor_width = (self.size.width - 352).max(1);
+                pass.set_scissor_rect(text_scissor_left, 0, text_scissor_width, self.size.height);
+
                 if self.current_morph < 0.5 {
                     pass.set_pipeline(&self.text_render_pipeline);
                     pass.set_bind_group(1, bg, &[]);
@@ -3026,11 +3040,11 @@ impl<'a> State<'a> {
                     pass.draw(0..self.num_static_text_vertices, 0..1);
                 }
 
-                pass.set_pipeline(&self.text_screen_pipeline);
-                pass.set_bind_group(1, bg, &[]);
-                pass.set_vertex_buffer(0, dyn_buf.slice(..));
-                let num_dyn = dyn_vertices.len() as u32;
-                pass.draw(0..num_dyn, 0..1);
+                 pass.set_pipeline(&self.text_screen_pipeline);
+                 pass.set_bind_group(1, bg, &[]);
+                 pass.set_vertex_buffer(0, dyn_buf.slice(..));
+                 let num_dyn = dyn_vertices.len() as u32;
+                 pass.draw(0..num_dyn, 0..1);
             }
 
             // 8. Header text (full width)
@@ -3234,6 +3248,32 @@ impl<'a> State<'a> {
     }
 }
 
+fn run_auto_build(data_dir: &std::path::Path) {
+    if let Some(parent) = data_dir.parent() {
+        let script_path = parent.join("scripts").join("auto_build.js");
+        if script_path.exists() {
+            println!("[INFO] Running auto-build: node {:?}", script_path);
+            let status = std::process::Command::new("node")
+                .arg(&script_path)
+                .status();
+            match status {
+                Ok(s) => {
+                    if s.success() {
+                        println!("[INFO] Auto-build completed successfully.");
+                    } else {
+                        eprintln!("[WARN] Auto-build failed with status: {:?}", s);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("[WARN] Could not run auto-build script: {}. Make sure Node.js is installed.", e);
+                }
+            }
+        } else {
+            eprintln!("[WARN] Auto-build script not found at {:?}", script_path);
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let initial_race_id = args.windows(2)
@@ -3248,6 +3288,7 @@ fn main() {
     window.set_cursor_visible(true);
 
     let data_dir = find_data_dir();
+    run_auto_build(&data_dir);
     let available_races = discover_races(&data_dir);
     if available_races.is_empty() {
         panic!("No races found in data/races/! Did you run the preprocessing scripts?");
