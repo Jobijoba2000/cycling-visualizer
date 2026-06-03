@@ -473,6 +473,9 @@ struct State<'a> {
     settings_white_sky_t: f32,
     settings_white_sky_animation: Option<SwitchAnimation>,
     use_white_sky: bool,
+    last_fps_update: Instant,
+    frame_count: u32,
+    fps: u32,
 }
 
 
@@ -1057,6 +1060,9 @@ impl<'a> State<'a> {
             use_white_sky: settings.white_sky,
             settings,
             dragging_slider: DraggingSlider::None,
+            last_fps_update: Instant::now(),
+            frame_count: 0,
+            fps: 0,
         };
 
         state.rebuild_ui();
@@ -1481,6 +1487,7 @@ impl<'a> State<'a> {
                 header_text_vertices.push(TextVertex { pos: [pos_h[i*2], pos_h[i*2+1]], uv: [uvs_h[i*2], uvs_h[i*2+1]], anchor: anchor_h, size: 0.4, depth: 0.0 });
             }
 
+
             let show_enter_help = !matches!(self.global_view_state, GlobalViewState::MorphingToTopDown | GlobalViewState::Swapped | GlobalViewState::ZoomingOut | GlobalViewState::FullyGlobal);
             if show_enter_help {
                 let help_enter = "[Entrée] Voir la carte globale";
@@ -1742,6 +1749,17 @@ impl<'a> State<'a> {
     }
 
     fn update(&mut self) {
+        // FPS calculation
+        self.frame_count += 1;
+        let now = Instant::now();
+        let elapsed = now.duration_since(self.last_fps_update);
+        if elapsed >= Duration::from_secs(1) {
+            self.fps = (self.frame_count as f32 / elapsed.as_secs_f32()).round() as u32;
+            self.frame_count = 0;
+            self.last_fps_update = now;
+            self.window.set_title(&format!("Cycling Visualizer - {} FPS", self.fps));
+        }
+
         // Sidebar scroll animation
         let mut scroll_finished = false;
         if let Some(anim) = self.sidebar_animation {
@@ -2162,6 +2180,7 @@ impl<'a> State<'a> {
                         }
                     }
                 }
+
             }
 
             let menu_text_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -3309,6 +3328,7 @@ fn main() {
 
     let mut state = pollster::block_on(State::new(Arc::clone(&window), available_races, initial_race_idx, app_phase));
     
+    let mut last_frame_time = std::time::Instant::now();
     event_loop.run(move |event, elwt| match event {
         Event::WindowEvent { ref event, window_id } if window_id == state.window.id() => match event {
             WindowEvent::CloseRequested => elwt.exit(),
@@ -3902,7 +3922,19 @@ fn main() {
             _ => {}
         }
         Event::AboutToWait => {
+            let target_frame_time = std::time::Duration::from_nanos(1_000_000_000 / 200); // 200 FPS
+            let elapsed = last_frame_time.elapsed();
+            if elapsed < target_frame_time {
+                let remaining = target_frame_time - elapsed;
+                if remaining > std::time::Duration::from_millis(2) {
+                    std::thread::sleep(remaining - std::time::Duration::from_millis(1));
+                }
+                while last_frame_time.elapsed() < target_frame_time {
+                    std::thread::yield_now();
+                }
+            }
             state.window.request_redraw();
+            last_frame_time = std::time::Instant::now();
         }
         _ => {}
     }).unwrap();
