@@ -1288,7 +1288,10 @@ impl<'a> State<'a> {
                 let x_start = x_left + 15.0;
                 
                 // 1. Nom de l'étape
-                let title = stage.name.clone();
+                let mut title = stage.name.clone();
+                if title.chars().count() > 24 {
+                    title = title.chars().take(21).collect::<String>() + "...";
+                }
                 let (pos, uvs): (Vec<f32>, Vec<f32>) = font.get_text_geometry(&title);
                 let anchor = [x_start, y_top - 30.0];
                 for i in 0..(pos.len() / 2) {
@@ -1296,7 +1299,10 @@ impl<'a> State<'a> {
                 }
 
                 // 2. Villes (Départ > Arrivée)
-                let cities = format!("{} > {}", stage.start, stage.finish);
+                let mut cities = format!("{} > {}", stage.start, stage.finish);
+                if cities.chars().count() > 32 {
+                    cities = cities.chars().take(29).collect::<String>() + "...";
+                }
                 let (pos, uvs): (Vec<f32>, Vec<f32>) = font.get_text_geometry(&cities);
                 let anchor_c = [x_start, y_top - 62.0];
                 for i in 0..(pos.len() / 2) {
@@ -1456,7 +1462,7 @@ impl<'a> State<'a> {
             }
 
             // Ligne 1: Etape N
-            let line1 = format!("Etape {}", self.selected_stage_idx + 1);
+            let line1 = stage.name.clone();
             let (pos1, uvs1): (Vec<f32>, Vec<f32>) = font.get_text_geometry(&line1);
             let anchor1 = [370.0, self.size.height as f32 - 82.0];
             for i in 0..(pos1.len() / 2) {

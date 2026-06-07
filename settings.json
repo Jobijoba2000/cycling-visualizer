@@ -9,6 +9,10 @@
     "tdf": {
       "exaggeration_2d": 1.0,
       "exaggeration_3d": 1.0
+    },
+    "tour-d-auvergne-rhone-alpes-2026": {
+      "exaggeration_2d": 1.0,
+      "exaggeration_3d": 0.4970588
     }
   }
 }

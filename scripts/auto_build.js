@@ -7,7 +7,8 @@ const earcut = require('earcut');
 const FOLDER_TO_RACE_ID = {
     'tour-de-france-2026': 'tdf',
     'giro-d-italia-2026': 'giro',
-    'vuelta-a-espana-2026': 'vuelta'
+    'vuelta-a-espana-2026': 'vuelta',
+    'tour-d-auvergne-rhone-alpes-2026': 'tour-d-auvergne-rhone-alpes-2026'
 };
 
 const KNOWN_RACES = {
@@ -111,6 +112,27 @@ const KNOWN_RACES = {
             { num: 19, name: 'Étape 19', start: 'Vélez-Málaga',      finish: 'Peñas Blancas',     date: '11/09/2026' },
             { num: 20, name: 'Étape 20', start: 'La Calahorra',      finish: 'Collada de Alguacil',date: '12/09/2026' },
             { num: 21, name: 'Étape 21', start: 'Granada',           finish: 'Granada',           date: '13/09/2026' }
+        ]
+    },
+    'tour-d-auvergne-rhone-alpes-2026': {
+        id: "tour-d-auvergne-rhone-alpes-2026",
+        name: "Tour d'Auvergne Rhône Alpes 2026",
+        color: [0.0, 0.6, 0.1, 1.0],
+        globalLat: 45.4,
+        globalLon: 5.8,
+        geojsonPath: path.join(__dirname, '../data/geojson/gadm41_FRA_0.geojson'),
+        gpxMode: 'multi',
+        gpxDir: path.join(__dirname, '../data/gpx/tour-d-auvergne-rhone-alpes-2026'),
+        gpxPrefix: 'stage-',
+        stages: [
+            { num: 1,  name: 'Étape 1',  start: 'Vizille',                   finish: 'Saint-Ismier',                  date: '07/06/2026' },
+            { num: 2,  name: 'Étape 2',  start: 'Saint-Martin-le-Vinoux',    finish: 'Le Puy-en-Velay',               date: '08/06/2026' },
+            { num: 3,  name: 'Étape 3',  start: 'Perreux',                   finish: 'Perreux',                       date: '09/06/2026' },
+            { num: 4,  name: 'Étape 4',  start: 'Le Puy-en-Velay',           finish: 'Montrond-les-Bains',            date: '10/06/2026' },
+            { num: 5,  name: 'Étape 5',  start: 'Saint-Chamond',             finish: 'Villars-les-Dombes',            date: '11/06/2026' },
+            { num: 6,  name: 'Étape 6',  start: 'Saint-Vulbas',              finish: 'Crest-Voland',                  date: '12/06/2026' },
+            { num: 7,  name: 'Étape 7',  start: 'La Bridoire',               finish: 'Grand Colombier',               date: '13/06/2026' },
+            { num: 8,  name: 'Étape 8',  start: 'Beaufort',                  finish: 'Plateau de Solaison',           date: '14/06/2026' }
         ]
     }
 };
@@ -346,7 +368,7 @@ function rebuildRace(raceId, dirName, currentHash) {
             let stageNum = 1;
             for (const file of files) {
                 const filePath = path.join(config.gpxDir, file);
-                const fileStages = loadGpxFileStages(filePath, `${config.name} - Étape ${stageNum}`, stageNum);
+                const fileStages = loadGpxFileStages(filePath, `Étape ${stageNum}`, stageNum);
                 parsedStages.push(...fileStages);
                 stageNum += fileStages.length;
             }
